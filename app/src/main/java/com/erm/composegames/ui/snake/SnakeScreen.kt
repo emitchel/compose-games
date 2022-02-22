@@ -23,6 +23,8 @@ fun SnakeScreen() {
     val state by remember { mutableStateOf(SnakeState()) }
 
     //TODO gesture detector...
+
+    //TODO MIGRATE TO LAZY GRID https://alexzh.com/jetpack-compose-building-grids/
     Column {
         for (y in 0..9) {
             Row(
@@ -91,6 +93,7 @@ fun SnakeState.progress(
         ).any { it < 0 }
     ) return copy(
         bodyPositions = newBody,
+        direction = directionAdjustFor,
         moveResult = SnakeMoveResult.OB
     )
 
@@ -98,6 +101,7 @@ fun SnakeState.progress(
     if (nextPosition.x == foodPosition.x && nextPosition.y == foodPosition.y)
         return copy(
             bodyPositions = newBody,
+            direction = directionAdjustFor,
             moveResult = SnakeMoveResult.ATE
         )
 
@@ -105,11 +109,14 @@ fun SnakeState.progress(
     if (bodyPositions.contains(nextPosition))
         return copy(
             bodyPositions = newBody,
+            direction = directionAdjustFor,
             moveResult = SnakeMoveResult.CLASH
         )
 
+    //Normal move otherwise
     return copy(
         bodyPositions = newBody,
+        direction = directionAdjustFor,
         moveResult = SnakeMoveResult.OK
     )
 }
