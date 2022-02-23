@@ -60,6 +60,7 @@ class SnakeViewModel : ViewModel() {
                     }
                     SnakeMoveResult.OB, SnakeMoveResult.CLASH -> {
                         _uiState.value = SnakeUiState.GameOver(_snakeState.value.bodyPositions.size)
+                        snakeMovingJob?.cancel()
                     }
                 }
             }
