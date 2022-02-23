@@ -24,10 +24,9 @@ import androidx.compose.ui.unit.dp
 fun SnakeScreen(viewModel: SnakeViewModel = SnakeViewModel()) {
 
     val snakeState by viewModel.snakeState.collectAsState()
-    //TODO individual cell states (thinking)
+    //TODO individual cell states (thinking) Cell(PositionType.Snake/Food/Empty
     val uiState by viewModel.uiState.collectAsState()
 
-    viewModel.start()
     Column {
         Column(
             modifier = Modifier.height(LocalConfiguration.current.screenWidthDp.dp),

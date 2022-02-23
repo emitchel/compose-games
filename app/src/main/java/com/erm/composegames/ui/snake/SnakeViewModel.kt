@@ -32,6 +32,11 @@ class SnakeViewModel : ViewModel() {
         _stepsPerSecond.value = perSecond
     }
 
+    init {
+        //TODO have this be triggered by action instead...
+        start()
+    }
+
     private var snakeMovingJob: Job? = null
     fun start() {
         //TODO rig up countdown
@@ -41,27 +46,33 @@ class SnakeViewModel : ViewModel() {
 
 
         snakeMovingJob = viewModelScope.launch(Dispatchers.Default) {
-            delay((1 / _stepsPerSecond.value) * 1000L)
+            while (true) {
+                delay((1 / _stepsPerSecond.value) * 1000L)
+                progressUi()
+            }
+        }
+    }
 
-            (_uiState.value as? SnakeUiState.Playing)?.let {
-                val newState = _snakeState.value.progress(
-                    _lastRequestedDirection.value,
-                    it.foodPosition
-                )
+    private fun progressUi() {
+        (_uiState.value as? SnakeUiState.Playing)?.let {
+            val newState = _snakeState.value.progress(
+                _lastRequestedDirection.value,
+                it.foodPosition
+            )
 
-                _snakeState.value = newState
+            _snakeState.value = newState
 
-                when (newState.moveResult) {
-                    SnakeMoveResult.OK -> {
-                        //no op
-                    }
-                    SnakeMoveResult.ATE -> {
-                        //TODO make noise?
-                    }
-                    SnakeMoveResult.OB, SnakeMoveResult.CLASH -> {
-                        _uiState.value = SnakeUiState.GameOver(_snakeState.value.bodyPositions.size)
-                        snakeMovingJob?.cancel()
-                    }
+            when (newState.moveResult) {
+                SnakeMoveResult.OK -> {
+                    //no op
+                }
+                SnakeMoveResult.ATE -> {
+                    //TODO make noise?
+                }
+                SnakeMoveResult.OB, SnakeMoveResult.CLASH -> {
+                    _uiState.value =
+                        SnakeUiState.GameOver(_snakeState.value.bodyPositions.size)
+                    snakeMovingJob?.cancel()
                 }
             }
         }
@@ -172,8 +183,8 @@ data class SnakeBodyPosition(
     val y: Int
 ) {
     companion object {
-        fun getBoringDefault() =
-            listOf(SnakeBodyPosition(2, 5), SnakeBodyPosition(3, 5), SnakeBodyPosition(4, 5))
+        fun getBoringDefault() = //Moving Right!
+            listOf(SnakeBodyPosition(4, 5), SnakeBodyPosition(3, 5), SnakeBodyPosition(2, 5))
     }
 }
 
