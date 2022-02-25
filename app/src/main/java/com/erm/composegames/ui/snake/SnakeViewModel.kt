@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import timber.log.Timber
 
-class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingSize: Int = 3) :
+class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, val snakeStartingSize: Int = 3) :
     ViewModel() {
 
     //TODO rig up via settings
@@ -42,18 +42,29 @@ class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingS
         _lastRequestedDirection.value = direction
     }
 
-    private var snakeMovingJob: Job? = null
-    fun start() = viewModelScope.launch {
-        listOf("3", "2", "1", "Go!").forEach { text ->
-            _uiState.value = SnakeUiState.CountDown(text)
-            delay(1000)
-        }
+    fun start(reset: Boolean = false) = viewModelScope.launch {
+        if (reset) _snakeState.value =
+            SnakeState.randomizeStartingPosition(snakeStartingSize, gridSize.value)
+
+        countDownToBegin()
         createNewFoodPosition()
+        begingSnakeMovingJob()
+    }
+
+    private var snakeMovingJob: Job? = null
+    private fun begingSnakeMovingJob() {
         snakeMovingJob = viewModelScope.launch(Dispatchers.Default) {
             while (true) {
                 delay((1 / _stepsPerSecond.value) * 1000L)
                 progressUi()
             }
+        }
+    }
+
+    private suspend fun countDownToBegin() {
+        listOf("3", "2", "1", "Go!").forEach { text ->
+            _uiState.value = SnakeUiState.CountDown(text)
+            delay(1000)
         }
     }
 

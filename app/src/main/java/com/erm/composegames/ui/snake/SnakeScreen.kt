@@ -1,6 +1,7 @@
 package com.erm.composegames.ui.snake
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,7 +51,9 @@ fun SnakeScreen() {
                     state.countdownText
                 )
             is SnakeUiState.GameOver ->
-                GameInfo("Game Over! Score: ${state.score}")
+                GameInfo("Game Over! Score: ${state.score}") {
+                    viewModel.start(true)
+                }
             is SnakeUiState.Playing ->
                 SwipeController(viewModel.snakeState.value.direction) {
                     viewModel.requestDirection(it)
@@ -68,8 +71,12 @@ fun SnakeScreen() {
 
 @Preview
 @Composable
-private fun GameInfo(text: String = "Game Over!") {
-    Box(modifier = Modifier.fillMaxSize()) {
+private fun GameInfo(text: String = "Game Over!", onClick: (() -> Unit)? = null) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable { onClick?.invoke() }
+    ) {
         Text(
             text = text,
             textAlign = TextAlign.Center,
