@@ -1,6 +1,7 @@
 package com.erm.composegames.ui.snake
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -9,27 +10,36 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import timber.log.Timber
 
-class SnakeViewModel : ViewModel() {
+class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingSize: Int = 3) :
+    ViewModel() {
+
+    //TODO rig up via settings
+    private val _gridSize = MutableStateFlow(gridSize)
+    val gridSize: StateFlow<Int>
+        get() = _gridSize.asStateFlow()
+
+    //TODO rig up via settings
+    private val _stepsPerSecond = MutableStateFlow(stepsPerSecond)
+    fun updateStepsPerSecond(perSecond: Int) {
+        _stepsPerSecond.value = perSecond
+    }
+
     //TODO rig up
     private val _uiState = MutableStateFlow<SnakeUiState>(SnakeUiState.Pregame)
     val uiState: StateFlow<SnakeUiState>
         get() = _uiState.asStateFlow()
 
-    private val _snakeState = MutableStateFlow(SnakeState())
+    private val _snakeState =
+        MutableStateFlow(SnakeState.randomizeStartingPosition(snakeStartingSize, gridSize))
     val snakeState: StateFlow<SnakeState>
         get() = _snakeState.asStateFlow()
 
     //TODO rig up via settings
-    private val _lastRequestedDirection = MutableStateFlow(SnakeDirection.RIGHT) //TODO randomize
+    private val _lastRequestedDirection = MutableStateFlow(snakeState.value.direction)
     fun requestDirection(direction: SnakeDirection) {
         _lastRequestedDirection.value = direction
-    }
-
-    //TODO rig up via settings
-    private val _stepsPerSecond = MutableStateFlow(1)
-    fun updateStepsPerSecond(perSecond: Int) {
-        _stepsPerSecond.value = perSecond
     }
 
     init {
@@ -41,9 +51,7 @@ class SnakeViewModel : ViewModel() {
     fun start() {
         //TODO rig up countdown
 
-        //TODO randomize starting food position
-        _uiState.value = SnakeUiState.Playing(SnakeFoodPosition(7, 2))
-
+        createNewFoodPosition()
 
         snakeMovingJob = viewModelScope.launch(Dispatchers.Default) {
             while (true) {
@@ -53,8 +61,17 @@ class SnakeViewModel : ViewModel() {
         }
     }
 
+    private fun createNewFoodPosition() {
+        _uiState.value = SnakeUiState.Playing(Position.random(gridSize.value.also {
+            Timber.d("Created new food position $it")
+        }))
+    }
+
     private fun progressUi() {
+        Timber.d("Attempting to progress snake, current state ${_uiState.value}")
         (_uiState.value as? SnakeUiState.Playing)?.let {
+            Timber.d("...Progressing")
+
             val newState = _snakeState.value.progress(
                 _lastRequestedDirection.value,
                 it.foodPosition
@@ -65,11 +82,15 @@ class SnakeViewModel : ViewModel() {
             when (newState.moveResult) {
                 SnakeMoveResult.OK -> {
                     //no op
+                    Timber.d("Ok snake move")
                 }
                 SnakeMoveResult.ATE -> {
-                    //TODO make noise?
+                    //TODO make noise? vibrate?
+                    Timber.d("CRONCH!!")
+                    createNewFoodPosition()
                 }
                 SnakeMoveResult.OB, SnakeMoveResult.CLASH -> {
+                    Timber.d("GAME OVER (${newState.moveResult})")
                     _uiState.value =
                         SnakeUiState.GameOver(_snakeState.value.bodyPositions.size)
                     snakeMovingJob?.cancel()
@@ -77,7 +98,6 @@ class SnakeViewModel : ViewModel() {
             }
         }
     }
-
 
     /**
      *
@@ -87,7 +107,7 @@ class SnakeViewModel : ViewModel() {
      */
     private fun SnakeState.progress(
         requestedDirection: SnakeDirection,
-        foodPosition: SnakeFoodPosition,
+        foodPosition: Position,
         xMax: Int = 9,
         yMax: Int = 9
     ): SnakeState = run {
@@ -95,11 +115,12 @@ class SnakeViewModel : ViewModel() {
         //Don't update direction if it's the opposite
         val directionAdjustedFor =
             if (direction.isOpposite(requestedDirection)) direction else requestedDirection
+        Timber.d("Moving $directionAdjustedFor")
 
         val head = bodyPositions.first()
         val nextPosition = when (directionAdjustedFor) {
-            SnakeDirection.UP -> head.copy(x = head.x, y = head.y + 1)
-            SnakeDirection.DOWN -> head.copy(x = head.x, y = head.y - 1)
+            SnakeDirection.UP -> head.copy(x = head.x, y = head.y - 1)
+            SnakeDirection.DOWN -> head.copy(x = head.x, y = head.y + 1)
             SnakeDirection.LEFT -> head.copy(x = head.x - 1, y = head.y)
             SnakeDirection.RIGHT -> head.copy(x = head.x + 1, y = head.y)
         }
@@ -109,6 +130,7 @@ class SnakeViewModel : ViewModel() {
 
         //If the LAST STATE wasn't ATE then remove the tail before evaluating next result
         if (moveResult != SnakeMoveResult.ATE) {
+            Timber.d("Snake didn't eat, removing trailing tail!")
             newBody.removeLast()
         }
 
@@ -146,46 +168,16 @@ class SnakeViewModel : ViewModel() {
             moveResult = SnakeMoveResult.OK
         )
     }
-}
 
-sealed class SnakeUiState {
-    object Pregame : SnakeUiState()
-    data class CountDown(val countdownText: String) : SnakeUiState()
-    data class Playing(val foodPosition: SnakeFoodPosition) : SnakeUiState()
-    data class GameOver(val score: Int) : SnakeUiState()
-}
-
-data class SnakeState(
-    val direction: SnakeDirection = SnakeDirection.RIGHT,
-    val bodyPositions: List<SnakeBodyPosition> = SnakeBodyPosition.getBoringDefault(),
-    val moveResult: SnakeMoveResult = SnakeMoveResult.OK
-)
-
-enum class SnakeDirection {
-    UP, DOWN, LEFT, RIGHT;
-
-    fun isOpposite(newDirection: SnakeDirection) =
-        (this == RIGHT && newDirection == LEFT) ||
-                (this == LEFT && newDirection == RIGHT) ||
-                (this == UP && newDirection == DOWN) ||
-                (this == DOWN && newDirection == UP)
-}
-
-enum class SnakeMoveResult {
-    OK, //Moved in a valid position
-    ATE, //Ate a fruit
-    OB, //Moved out of bounds
-    CLASH //Clashed with a part of the snak
-}
-
-data class SnakeBodyPosition(
-    val x: Int,
-    val y: Int
-) {
-    companion object {
-        fun getBoringDefault() = //Moving Right!
-            listOf(SnakeBodyPosition(4, 5), SnakeBodyPosition(3, 5), SnakeBodyPosition(2, 5))
+    companion object Factory {
+        class Create(
+            private val gridSize: Int,
+            private val stepsPerSecond: Int,
+            private val snakeStartingSize: Int
+        ) :
+            ViewModelProvider.NewInstanceFactory() {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                SnakeViewModel(gridSize, stepsPerSecond, snakeStartingSize) as T
+        }
     }
 }
-
-data class SnakeFoodPosition(val x: Int, val y: Int)

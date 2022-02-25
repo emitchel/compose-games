@@ -17,11 +17,19 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Preview
 @Composable
-fun SnakeScreen(viewModel: SnakeViewModel = SnakeViewModel()) {
+fun SnakeScreen() {
+    val viewModel: SnakeViewModel = viewModel(
+        factory = SnakeViewModel.Factory.Create(
+            gridSize = 10,
+            stepsPerSecond = 1,
+            snakeStartingSize = 3
+        )
+    )
 
     val snakeState by viewModel.snakeState.collectAsState()
     //TODO individual cell states (thinking) Cell(PositionType.Snake/Food/Empty
@@ -32,20 +40,20 @@ fun SnakeScreen(viewModel: SnakeViewModel = SnakeViewModel()) {
             modifier = Modifier.height(LocalConfiguration.current.screenWidthDp.dp),
             verticalArrangement = Arrangement.spacedBy(2.dp)
         ) {
-            for (y in 0..9) {
+            for (y in 0 until viewModel.gridSize.value) {
                 Row(
                     modifier = Modifier
                         .weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(2.dp)
                 ) {
-                    for (x in 0..9) {
+                    for (x in 0 until viewModel.gridSize.value) {
                         Card(
                             modifier = Modifier
                                 .weight(1f)
                                 .fillMaxSize()
                                 .align(CenterVertically),
                             backgroundColor = if (snakeState.bodyPositions.contains(
-                                    SnakeBodyPosition(
+                                    Position(
                                         x,
                                         y
                                     )
@@ -53,7 +61,7 @@ fun SnakeScreen(viewModel: SnakeViewModel = SnakeViewModel()) {
                             ) Color.Green else Color.Transparent
                         ) {
                             if ((uiState as? SnakeUiState.Playing)
-                                    ?.foodPosition == SnakeFoodPosition(x, y)
+                                    ?.foodPosition == Position(x, y)
                             ) {
                                 Icon(Icons.Filled.Star, "Food")
                             }
@@ -85,10 +93,10 @@ fun SnakeScreen(viewModel: SnakeViewModel = SnakeViewModel()) {
                         }
                         when {
                             y > 0 -> {
-                                viewModel.requestDirection(SnakeDirection.UP)
+                                viewModel.requestDirection(SnakeDirection.DOWN)
                             }
                             y < 0 -> {
-                                viewModel.requestDirection(SnakeDirection.DOWN)
+                                viewModel.requestDirection(SnakeDirection.UP)
                             }
                         }
 
