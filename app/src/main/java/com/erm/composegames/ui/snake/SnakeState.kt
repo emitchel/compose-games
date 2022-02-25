@@ -3,7 +3,7 @@ package com.erm.composegames.ui.snake
 import timber.log.Timber
 
 data class SnakeState(
-    val direction: SnakeDirection,
+    val direction: Direction,
     val bodyPositions: List<Position>,
     val moveResult: SnakeMoveResult = SnakeMoveResult.OK
 ) {
@@ -14,20 +14,20 @@ data class SnakeState(
             Timber.d("Starting head position $head")
             //Regardless of where the tail starts, let the head go in a direction
             // with the most room
-            var preferredDirection = SnakeDirection.UP
+            var preferredDirection = Direction.UP
             var preferredDirectionRoomToMove = head.y
 
             when {
                 head.x > preferredDirectionRoomToMove -> {
-                    preferredDirection = SnakeDirection.LEFT
+                    preferredDirection = Direction.LEFT
                     preferredDirectionRoomToMove = head.x
                 }
                 (gridSize - head.x) > preferredDirectionRoomToMove -> {
-                    preferredDirection = SnakeDirection.RIGHT
+                    preferredDirection = Direction.RIGHT
                     preferredDirectionRoomToMove = (gridSize - head.x)
                 }
                 (gridSize - head.y) > preferredDirectionRoomToMove -> {
-                    preferredDirection = SnakeDirection.DOWN
+                    preferredDirection = Direction.DOWN
                     preferredDirectionRoomToMove = (gridSize - head.y)
                 }
             }
@@ -36,25 +36,25 @@ data class SnakeState(
 
             //build the tail "behind" the head
             val body = when (preferredDirection) {
-                SnakeDirection.UP -> (head.y until head.y + snakeStartingSize).map {
+                Direction.UP -> (head.y until head.y + snakeStartingSize).map {
                     Position(
                         head.x,
                         it
                     )
                 }
-                SnakeDirection.DOWN -> ((head.y - snakeStartingSize) + 1..head.y).reversed().map {
+                Direction.DOWN -> ((head.y - snakeStartingSize) + 1..head.y).reversed().map {
                     Position(
                         head.x,
                         it
                     )
                 }
-                SnakeDirection.LEFT -> (head.x until head.x + snakeStartingSize).map {
+                Direction.LEFT -> (head.x until head.x + snakeStartingSize).map {
                     Position(
                         it,
                         head.y
                     )
                 }
-                SnakeDirection.RIGHT -> ((head.x - snakeStartingSize) + 1..head.x).reversed().map {
+                Direction.RIGHT -> ((head.x - snakeStartingSize) + 1..head.x).reversed().map {
                     Position(
                         it,
                         head.y

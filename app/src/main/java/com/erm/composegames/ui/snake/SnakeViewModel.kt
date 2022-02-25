@@ -38,21 +38,17 @@ class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingS
 
     //TODO rig up via settings
     private val _lastRequestedDirection = MutableStateFlow(snakeState.value.direction)
-    fun requestDirection(direction: SnakeDirection) {
+    fun requestDirection(direction: Direction) {
         _lastRequestedDirection.value = direction
     }
 
-    init {
-        //TODO have this be triggered by action instead...
-        start()
-    }
-
     private var snakeMovingJob: Job? = null
-    fun start() {
-        //TODO rig up countdown
-
+    fun start() = viewModelScope.launch {
+        listOf("3", "2", "1", "Go!").forEach { text ->
+            _uiState.value = SnakeUiState.CountDown(text)
+            delay(1000)
+        }
         createNewFoodPosition()
-
         snakeMovingJob = viewModelScope.launch(Dispatchers.Default) {
             while (true) {
                 delay((1 / _stepsPerSecond.value) * 1000L)
@@ -106,7 +102,7 @@ class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingS
      * Check [SnakeState.moveResult] to determine what the UI should do
      */
     private fun SnakeState.progress(
-        requestedDirection: SnakeDirection,
+        requestedDirection: Direction,
         foodPosition: Position,
         xMax: Int = 9,
         yMax: Int = 9
@@ -119,10 +115,10 @@ class SnakeViewModel(gridSize: Int = 10, stepsPerSecond: Int = 1, snakeStartingS
 
         val head = bodyPositions.first()
         val nextPosition = when (directionAdjustedFor) {
-            SnakeDirection.UP -> head.copy(x = head.x, y = head.y - 1)
-            SnakeDirection.DOWN -> head.copy(x = head.x, y = head.y + 1)
-            SnakeDirection.LEFT -> head.copy(x = head.x - 1, y = head.y)
-            SnakeDirection.RIGHT -> head.copy(x = head.x + 1, y = head.y)
+            Direction.UP -> head.copy(x = head.x, y = head.y - 1)
+            Direction.DOWN -> head.copy(x = head.x, y = head.y + 1)
+            Direction.LEFT -> head.copy(x = head.x - 1, y = head.y)
+            Direction.RIGHT -> head.copy(x = head.x + 1, y = head.y)
         }
 
         //Move body right away

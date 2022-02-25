@@ -1,9 +1,9 @@
 package com.erm.composegames.ui.snake
 
-enum class SnakeDirection {
+enum class Direction {
     UP, DOWN, LEFT, RIGHT;
 
-    fun isOpposite(newDirection: SnakeDirection) =
+    fun isOpposite(newDirection: Direction) =
         (this == RIGHT && newDirection == LEFT) ||
                 (this == LEFT && newDirection == RIGHT) ||
                 (this == UP && newDirection == DOWN) ||
