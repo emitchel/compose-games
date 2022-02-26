@@ -41,3 +41,4 @@ sealed class WordleKeys {
 
 
 fun String.toWordleLetters() = map { WordleKeys.WordleLetter.Pending(it) }
+fun Char.toPending() = WordleKeys.WordleLetter.Pending(this)
