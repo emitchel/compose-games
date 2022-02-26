@@ -15,7 +15,7 @@ class WordleViewModel(
     val wordleState: StateFlow<WordleState>
         get() = _wordleState.asStateFlow()
 
-    private var _wordleUiState = MutableStateFlow(WordleUiState.Playing)
+    private var _wordleUiState = MutableStateFlow<WordleUiState>(WordleUiState.Playing)
     val wordleUiState: StateFlow<WordleUiState>
         get() = _wordleUiState.asStateFlow()
 
@@ -69,6 +69,7 @@ class WordleViewModel(
                         })
                     updateCurrentAttempt(newAttempt)
                     updateKeyboardWithCurrentAttempts()
+                    updateToNextAttempt(newAttempt)
                 }
             }
             is WordleKeys.WordleLetter -> wordleKey.char?.let { enteredChar ->
@@ -88,6 +89,23 @@ class WordleViewModel(
                 //      [A _ _ _ _]*
                 updateCurrentAttempt(newAttempt)
             }
+        }
+    }
+
+    private fun updateToNextAttempt(lastAttemptAdded: WordleAttempt) {
+        if (lastAttemptAdded.letters.all { it is WordleKeys.WordleLetter.Green }) {
+            //Success!
+            _wordleUiState.value = WordleUiState.Success(
+                currentWord.toString(),
+                currentAttemptIndex + 1,
+                wordleState.value.attempts.size
+            )
+            return
+        }
+        currentAttemptIndex++ //Update index
+        if (currentAttemptIndex == wordleState.value.attempts.size) {
+            //If no index is at the max attempts, show failure :( 
+            _wordleUiState.value = WordleUiState.Fail(currentWord.toString())
         }
     }
 
