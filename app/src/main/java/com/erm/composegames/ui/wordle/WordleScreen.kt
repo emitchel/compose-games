@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.Green
+import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.Color.Companion.Yellow
 import androidx.compose.ui.text.style.TextAlign
@@ -61,6 +62,7 @@ private fun WordleKeyboard(
         keyboard.keys.forEach { keyRow ->
             Row(
                 modifier = Modifier
+                    .height(52.dp)
                     .wrapContentWidth()
                     .align(Alignment.CenterHorizontally),
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -69,12 +71,11 @@ private fun WordleKeyboard(
                     Box(
                         modifier = Modifier
                             .border(1.dp, Black)
+                            .wrapContentWidth()
+                            .fillMaxHeight()
+                            .defaultMinSize(minWidth = 32.dp)
                             .align(Alignment.CenterVertically)
                             .clickable { keyPressed(key) }
-                            .padding(
-                                horizontal = 12.dp,
-                                vertical = 16.dp
-                            )
                             .background(
                                 when (key) {
                                     is WordleKey.WordleLetter.Green -> Green
@@ -92,7 +93,10 @@ private fun WordleKeyboard(
                                 is WordleKey.Enter -> "Enter"
                             },
                             fontSize = if (key is WordleKey.WordleLetter) 16.sp else 10.sp,
-                            color = if (key is WordleKey.WordleLetter.Pending || key !is WordleKey.WordleLetter) Black else White
+                            color = if (key is WordleKey.WordleLetter.Pending || key !is WordleKey.WordleLetter) Black else White,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.align(Alignment.Center),
+                            style = MaterialTheme.typography.h2
                         )
                     }
                 }
@@ -128,7 +132,7 @@ private fun WordleGrid(
                                     is WordleKey.WordleLetter.Gray -> Gray
                                     is WordleKey.WordleLetter.Yellow -> Yellow
                                     is WordleKey.WordleLetter.Pending -> White
-                                    else -> White
+                                    is WordleKey.WordleLetter.Invalid -> Red
                                 }
                             )
                     ) {

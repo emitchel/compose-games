@@ -116,6 +116,8 @@ class WordleViewModel(
             .filterIsInstance<WordleKey.WordleLetter.Yellow>().map { it.char }
         val greens = _wordleState.value.attempts.flatMap { it.letters }
             .filterIsInstance<WordleKey.WordleLetter.Green>().map { it.char }
+        val grays = _wordleState.value.attempts.flatMap { it.letters }
+            .filterIsInstance<WordleKey.WordleLetter.Gray>().map { it.char }
 
         val keyboardRows = _wordleState.value.keyboard.keys.map {
             it.map { key ->
@@ -125,8 +127,10 @@ class WordleViewModel(
                             WordleKey.WordleLetter.Yellow(key.char!!)
                         } else if (greens.contains(key.char)) {
                             WordleKey.WordleLetter.Green(key.char!!)
-                        } else {
+                        } else if (grays.contains(key.char)) {
                             WordleKey.WordleLetter.Gray(key.char!!)
+                        } else {
+                            WordleKey.WordleLetter.Pending(key.char)
                         }
                     }
                     else -> key //keep references to enter and delete
