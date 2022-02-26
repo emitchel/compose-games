@@ -22,12 +22,7 @@ class WordleViewModel(
 
     private var currentAttemptIndex = 0
     private val currentWordleAttempt: WordleAttempt get() = _wordleState.value.attempts[currentAttemptIndex]
-    private lateinit var currentWord: CharArray
-
-    init {
-        //TODO get word of the day from pre loaded database
-        currentWord = "joker".toCharArray()
-    }
+    private var currentWord: CharArray = WordleRepository.getTodaysWord().toCharArray()
 
     fun input(wordleKey: WordleKey) {
         when (wordleKey) {
@@ -45,8 +40,8 @@ class WordleViewModel(
             WordleKey.Enter -> {
                 if (currentWordleAttempt.letters.any { it.char == null }) return //no op, no filled out yet!
 
-                //TODO implement is valid word boolean (read from dao?)
-                if ((0..10).random() > 9) {
+                if (!WordleRepository.isValidWord(currentWordleAttempt.letters.map { it.char!! }
+                        .joinToString(""))) {
                     //Is NOT valid word
                     val newAttempt = WordleAttempt(currentWordleAttempt.letters.map {
                         WordleKey.WordleLetter.Invalid(it.char!!)
