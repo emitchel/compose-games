@@ -1,13 +1,14 @@
 package com.erm.composegames.ui.wordle
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 class WordleViewModel(
-    lengthOfWord: Int = 5,
-    numberOfAttempts: Int = 6
+    private val lengthOfWord: Int = 5,
+    private val numberOfAttempts: Int = 6
 ) : ViewModel() {
     private var _wordleState =
         MutableStateFlow(generateNewWordleState(numberOfAttempts, lengthOfWord))
@@ -28,27 +29,27 @@ class WordleViewModel(
         currentWord = "joker".toCharArray()
     }
 
-    fun input(wordleKey: WordleKeys) {
+    fun input(wordleKey: WordleKey) {
         when (wordleKey) {
-            WordleKeys.Delete -> {
+            WordleKey.Delete -> {
                 if (currentWordleAttempt.letters.all { it.char == null }) return //no op, no letters!
 
                 val newAttempt = WordleAttempt(currentWordleAttempt.letters.toMutableList().apply {
                     set(
                         currentWordleAttempt.letters.indexOfLast { it.char != null },
-                        WordleKeys.WordleLetter.Pending(null)
+                        WordleKey.WordleLetter.Pending(null)
                     )
                 })
                 updateCurrentAttempt(newAttempt)
             }
-            WordleKeys.Enter -> {
+            WordleKey.Enter -> {
                 if (currentWordleAttempt.letters.any { it.char == null }) return //no op, no filled out yet!
 
                 //TODO implement is valid word boolean (read from dao?)
                 if ((0..10).random() > 9) {
                     //Is NOT valid word
                     val newAttempt = WordleAttempt(currentWordleAttempt.letters.map {
-                        WordleKeys.WordleLetter.Invalid(it.char!!)
+                        WordleKey.WordleLetter.Invalid(it.char!!)
                     })
                     updateCurrentAttempt(newAttempt)
                 } else {
@@ -57,13 +58,13 @@ class WordleViewModel(
                         WordleAttempt(currentWordleAttempt.letters.mapIndexed { index, wordleLetter ->
                             when {
                                 currentWord[index] == wordleLetter.char -> {
-                                    WordleKeys.WordleLetter.Green(wordleLetter.char!!)
+                                    WordleKey.WordleLetter.Green(wordleLetter.char!!)
                                 }
                                 currentWord.contains(wordleLetter.char!!) -> {
-                                    WordleKeys.WordleLetter.Yellow(wordleLetter.char!!)
+                                    WordleKey.WordleLetter.Yellow(wordleLetter.char!!)
                                 }
                                 else -> {
-                                    WordleKeys.WordleLetter.Gray(wordleLetter.char!!)
+                                    WordleKey.WordleLetter.Gray(wordleLetter.char!!)
                                 }
                             }
                         })
@@ -72,7 +73,7 @@ class WordleViewModel(
                     updateToNextAttempt(newAttempt)
                 }
             }
-            is WordleKeys.WordleLetter -> wordleKey.char?.let { enteredChar ->
+            is WordleKey.WordleLetter -> wordleKey.char?.let { enteredChar ->
                 val indexOfLetterToSet =
                     currentWordleAttempt.letters.indexOfFirst { it.char == null }
                 if (indexOfLetterToSet == -1) return //no op, row filled out!
@@ -93,18 +94,18 @@ class WordleViewModel(
     }
 
     private fun updateToNextAttempt(lastAttemptAdded: WordleAttempt) {
-        if (lastAttemptAdded.letters.all { it is WordleKeys.WordleLetter.Green }) {
+        if (lastAttemptAdded.letters.all { it is WordleKey.WordleLetter.Green }) {
             //Success!
             _wordleUiState.value = WordleUiState.Success(
                 currentWord.toString(),
                 currentAttemptIndex + 1,
-                wordleState.value.attempts.size
+                numberOfAttempts
             )
             return
         }
         currentAttemptIndex++ //Update index
-        if (currentAttemptIndex == wordleState.value.attempts.size) {
-            //If no index is at the max attempts, show failure :( 
+        if (currentAttemptIndex == numberOfAttempts) {
+            //If no index is at the max attempts, show failure :(
             _wordleUiState.value = WordleUiState.Fail(currentWord.toString())
         }
     }
@@ -112,20 +113,20 @@ class WordleViewModel(
     //Not sure if this could be any more inefficient
     private fun updateKeyboardWithCurrentAttempts() {
         val yellows = _wordleState.value.attempts.flatMap { it.letters }
-            .filterIsInstance<WordleKeys.WordleLetter.Yellow>().map { it.char }
+            .filterIsInstance<WordleKey.WordleLetter.Yellow>().map { it.char }
         val greens = _wordleState.value.attempts.flatMap { it.letters }
-            .filterIsInstance<WordleKeys.WordleLetter.Green>().map { it.char }
+            .filterIsInstance<WordleKey.WordleLetter.Green>().map { it.char }
 
         val keyboardRows = _wordleState.value.keyboard.keys.map {
             it.map { key ->
                 when (key) {
-                    is WordleKeys.WordleLetter -> {
+                    is WordleKey.WordleLetter -> {
                         if (yellows.contains(key.char)) {
-                            WordleKeys.WordleLetter.Yellow(key.char!!)
+                            WordleKey.WordleLetter.Yellow(key.char!!)
                         } else if (greens.contains(key.char)) {
-                            WordleKeys.WordleLetter.Green(key.char!!)
+                            WordleKey.WordleLetter.Green(key.char!!)
                         } else {
-                            WordleKeys.WordleLetter.Gray(key.char!!)
+                            WordleKey.WordleLetter.Gray(key.char!!)
                         }
                     }
                     else -> key //keep references to enter and delete
@@ -150,15 +151,29 @@ class WordleViewModel(
     }
 
     fun restartAttempts() {
-        //TODO same word, new attempts
+        _wordleState.value = generateNewWordleState(numberOfAttempts, lengthOfWord)
+        _wordleUiState.value = WordleUiState.Playing
     }
 
     fun newGame() {
-        //TODO new word, new attempts
+        //TODO generate new word!
+        _wordleState.value = generateNewWordleState(numberOfAttempts, lengthOfWord)
+        _wordleUiState.value = WordleUiState.Playing
     }
 
     private fun generateNewWordleState(
         numberOfAttempts: Int,
         lengthOfWord: Int
     ) = WordleState(WordleAttempt.create(numberOfAttempts, lengthOfWord))
+
+    companion object Factory {
+        class Create(
+            private val lengthOfWord: Int = 5,
+            private val numberOfAttempts: Int = 6
+        ) :
+            ViewModelProvider.NewInstanceFactory() {
+            override fun <T : ViewModel?> create(modelClass: Class<T>): T =
+                WordleViewModel(lengthOfWord, numberOfAttempts) as T
+        }
+    }
 }
