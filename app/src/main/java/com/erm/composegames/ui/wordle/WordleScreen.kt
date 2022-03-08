@@ -12,6 +12,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Black
 import androidx.compose.ui.graphics.Color.Companion.Gray
 import androidx.compose.ui.graphics.Color.Companion.Green
@@ -34,15 +35,15 @@ fun WordleScreen() {
         )
     )
 
-    val wordleState by viewModel.wordleState.collectAsState()
     val uiState by viewModel.wordleUiState.collectAsState()
+    val gameState by viewModel.wordleGameState.collectAsState()
     Column(
         modifier = Modifier
             .padding(8.dp)
             .fillMaxSize(),
     ) {
-        WordleGrid(wordleState.attempts)
-        WordleKeyboard(wordleState.keyboard) {
+        WordleGrid(uiState.attempts)
+        WordleKeyboard(uiState.keyboard) {
             viewModel.input(it)
         }
     }
@@ -77,21 +78,11 @@ private fun WordleKeyboard(
                             .align(Alignment.CenterVertically)
                             .clickable { keyPressed(key) }
                             .background(
-                                when (key) {
-                                    is WordleKey.WordleLetter.Green -> Green
-                                    is WordleKey.WordleLetter.Gray -> Gray
-                                    is WordleKey.WordleLetter.Yellow -> Yellow
-                                    is WordleKey.WordleLetter.Pending -> White
-                                    else -> White
-                                }
+                                if (key is WordleKey.WordleLetter) key.color else White
                             )
                     ) {
                         Text(
-                            text = when (key) {
-                                is WordleKey.WordleLetter -> key.char.toString()
-                                is WordleKey.Delete -> "Delete"
-                                is WordleKey.Enter -> "Enter"
-                            },
+                            text = key.text.orEmpty(),
                             fontSize = if (key is WordleKey.WordleLetter) 16.sp else 10.sp,
                             color = if (key is WordleKey.WordleLetter.Pending || key !is WordleKey.WordleLetter) Black else White,
                             textAlign = TextAlign.Center,
@@ -126,15 +117,7 @@ private fun WordleGrid(
                             .aspectRatio(1f)
                             .border(1.dp, Black)
                             .align(Alignment.CenterVertically)
-                            .background(
-                                when (letter) {
-                                    is WordleKey.WordleLetter.Green -> Green
-                                    is WordleKey.WordleLetter.Gray -> Gray
-                                    is WordleKey.WordleLetter.Yellow -> Yellow
-                                    is WordleKey.WordleLetter.Pending -> White
-                                    is WordleKey.WordleLetter.Invalid -> Red
-                                }
-                            )
+                            .background(letter.color)
                     ) {
                         Text(
                             text = letter.char?.toString() ?: "",

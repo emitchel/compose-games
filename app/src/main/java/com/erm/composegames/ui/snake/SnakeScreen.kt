@@ -33,8 +33,8 @@ fun SnakeScreen() {
         )
     )
 
-    val snakeState by viewModel.snakeState.collectAsState()
-    val uiState by viewModel.uiState.collectAsState()
+    val snakeState by viewModel.snakeUiState.collectAsState()
+    val uiState by viewModel.gameState.collectAsState()
     Column(
         modifier = Modifier
             .padding(8.dp)
@@ -43,22 +43,22 @@ fun SnakeScreen() {
         SnakeGrid(
             viewModel.gridSize.value,
             snakeState.bodyPositions,
-            (uiState as? SnakeUiState.Playing)?.foodPosition
+            (uiState as? SnakeGameState.Playing)?.foodPosition
         )
         when (val state = uiState) {
-            is SnakeUiState.CountDown ->
+            is SnakeGameState.CountDown ->
                 GameInfo(
                     state.countdownText
                 )
-            is SnakeUiState.GameOver ->
+            is SnakeGameState.GameOver ->
                 GameInfo("Game Over! Score: ${state.score}") {
                     viewModel.start(true)
                 }
-            is SnakeUiState.Playing ->
-                SwipeController(viewModel.snakeState.value.direction) {
+            is SnakeGameState.Playing ->
+                SwipeController(viewModel.snakeUiState.value.direction) {
                     viewModel.requestDirection(it)
                 }
-            SnakeUiState.Pregame -> Button(
+            SnakeGameState.Pregame -> Button(
                 onClick = { viewModel.start() },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
