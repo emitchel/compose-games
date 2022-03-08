@@ -39,6 +39,10 @@ sealed class WordleKey(val text: String?) {
         data class Absent(override val char: Char) : WordleLetter(char, Absent)
         data class InvalidWord(override val char: Char) : WordleLetter(char, InvalidWord)
         data class Pending(override val char: Char?) : WordleLetter(char, Pending)
+
+        companion object {
+            fun WordleLetter.isEnteredValidWord() = this !is InvalidWord && this !is Pending
+        }
     }
 }
 
