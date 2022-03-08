@@ -127,6 +127,7 @@ private fun WordleGrid(
                         targetValue = if (letter.isEnteredValidWord()) 180f else 0f,
                         animationSpec = tween(durationMillis = 600)
                     )
+
                     var shiftX by remember { mutableStateOf(0f) }
                     val shiftAnimation: Float by animateFloatAsState(
                         targetValue = shiftX,
@@ -134,6 +135,7 @@ private fun WordleGrid(
                     )
                     if (letter is WordleKey.WordleLetter.InvalidWord) {
                         //TODO this doesn't react on stale invalid letters.
+                        // this is solved by having a state param to represent the shake effect...
                         LaunchedEffect(letter.hashCode()) {
                             repeat(3) {
                                 if (shiftX == 0f) shiftX = 10f

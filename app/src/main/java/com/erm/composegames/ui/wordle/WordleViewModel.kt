@@ -2,9 +2,13 @@ package com.erm.composegames.ui.wordle
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
+import com.erm.composegames.ui.wordle.WordleKey.WordleLetter.Companion.isEnteredValidWord
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class WordleViewModel(
     private val lengthOfWord: Int = 5,
@@ -35,7 +39,7 @@ class WordleViewModel(
                         WordleKey.WordleLetter.Pending(null)
                     )
                 })
-                updateCurrentAttempt(newAttempt)
+                viewModelScope.launch { updateCurrentAttempt(newAttempt) }
             }
             WordleKey.Enter -> {
                 if (currentWordleAttempt.letters.any { it.char == null }) return //no op, no letters filled out yet!
@@ -46,7 +50,7 @@ class WordleViewModel(
                     val newAttempt = WordleAttempt(currentWordleAttempt.letters.map {
                         WordleKey.WordleLetter.InvalidWord(it.char!!)
                     })
-                    updateCurrentAttempt(newAttempt)
+                    viewModelScope.launch { updateCurrentAttempt(newAttempt) }
                 } else {
                     //Is valid word
                     val newAttempt =
@@ -63,9 +67,11 @@ class WordleViewModel(
                                 }
                             }
                         })
-                    updateCurrentAttempt(newAttempt)
-                    updateKeyboardWithCurrentAttempts()
-                    updateToNextAttempt(newAttempt)
+                    viewModelScope.launch {
+                        updateCurrentAttempt(newAttempt)
+                        updateKeyboardWithCurrentAttempts()
+                        updateToNextAttempt(newAttempt)
+                    }
                 }
             }
             is WordleKey.WordleLetter -> wordleKey.char?.let { enteredChar ->
@@ -83,7 +89,7 @@ class WordleViewModel(
                 //Update attempt row in wordle state
                 // e.x. [A B C D E]
                 //      [A _ _ _ _]*
-                updateCurrentAttempt(newAttempt)
+                viewModelScope.launch { updateCurrentAttempt(newAttempt) }
             }
         }
     }
@@ -139,14 +145,30 @@ class WordleViewModel(
 
     }
 
-    private fun updateCurrentAttempt(newAttempt: WordleAttempt) {
-        _wordleUiState.value = _wordleUiState.value.run {
-            val newAttempts = attempts.toMutableList().apply {
-                set(currentAttemptIndex, newAttempt)
-            }
+    private suspend fun updateCurrentAttempt(newAttempt: WordleAttempt) {
+        newAttempt.letters.forEachIndexed { index, wordleLetter ->
+            _wordleUiState.value = _wordleUiState.value.run {
+                val newAttempts = attempts.toMutableList().apply {
+                    val attemptUpdated = get(currentAttemptIndex)
+                    val lettersUpdated =
+                        attemptUpdated.letters.toMutableList().apply { set(index, wordleLetter) }
 
-            copy(attempts = newAttempts)
+                    set(currentAttemptIndex, WordleAttempt(lettersUpdated))
+                }
+
+                copy(attempts = newAttempts)
+            }
+            //Reveal valid words
+            if (wordleLetter.isEnteredValidWord()) delay(250)
         }
+        //Old way
+//        _wordleUiState.value = _wordleUiState.value.run {
+//            val newAttempts = attempts.toMutableList().apply {
+//                set(currentAttemptIndex, newAttempt)
+//            }
+//
+//            copy(attempts = newAttempts)
+//        }
     }
 
     fun restartAttempts() {
