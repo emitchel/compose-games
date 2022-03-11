@@ -30,7 +30,7 @@ class WordleViewModel(
 
     fun input(wordleKey: WordleKey) {
         when (wordleKey) {
-            WordleKey.Delete -> {
+            WordleKey.WordleFunctionKey.Delete -> {
                 if (currentWordleAttempt.letters.all { it.char == null }) return //no op, no letters!
 
                 val newAttempt = WordleAttempt(currentWordleAttempt.letters.toMutableList().apply {
@@ -41,7 +41,7 @@ class WordleViewModel(
                 })
                 viewModelScope.launch { updateCurrentAttempt(newAttempt) }
             }
-            WordleKey.Enter -> {
+            WordleKey.WordleFunctionKey.Enter -> {
                 if (currentWordleAttempt.letters.any { it.char == null }) return //no op, no letters filled out yet!
 
                 if (!WordleRepository.isValidWord(currentWordleAttempt.letters.map { it.char!! }

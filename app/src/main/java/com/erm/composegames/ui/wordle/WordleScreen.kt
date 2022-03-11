@@ -84,7 +84,11 @@ private fun WordleKeyboard(
                     Box(
                         modifier = Modifier
                             .border(1.dp, Black)
-                            .wrapContentWidth()
+                            .run {
+                                if (key is WordleKey.WordleFunctionKey) {
+                                    width(64.dp)
+                                } else wrapContentWidth()
+                            }
                             .fillMaxHeight()
                             .defaultMinSize(minWidth = 32.dp)
                             .align(Alignment.CenterVertically)
@@ -136,7 +140,7 @@ private fun WordleGrid(
                     if (letter is WordleKey.WordleLetter.InvalidWord) {
                         //TODO this doesn't react on stale invalid letters.
                         // this is solved by having a state param to represent the shake effect...
-                        LaunchedEffect(letter.hashCode()) {
+                        LaunchedEffect(Unit) {
                             repeat(3) {
                                 if (shiftX == 0f) shiftX = 10f
                                 delay(150)
