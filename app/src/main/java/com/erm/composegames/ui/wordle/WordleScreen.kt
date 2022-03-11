@@ -138,8 +138,6 @@ private fun WordleGrid(
                         animationSpec = tween(durationMillis = 300)
                     )
                     if (letter is WordleKey.WordleLetter.InvalidWord) {
-                        //TODO this doesn't react on stale invalid letters.
-                        // this is solved by having a state param to represent the shake effect...
                         LaunchedEffect(Unit) {
                             repeat(3) {
                                 if (shiftX == 0f) shiftX = 10f

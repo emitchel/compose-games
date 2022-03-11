@@ -39,7 +39,13 @@ class WordleViewModel(
                         WordleKey.WordleLetter.Pending(null)
                     )
                 })
-                viewModelScope.launch { updateCurrentAttempt(newAttempt) }
+                //Reset status to pending
+                val resetAttempt = WordleAttempt(newAttempt.letters.map {
+                    WordleKey.WordleLetter.Pending(
+                        it.char
+                    )
+                })
+                viewModelScope.launch { updateCurrentAttempt(resetAttempt) }
             }
             WordleKey.WordleFunctionKey.Enter -> {
                 if (currentWordleAttempt.letters.any { it.char == null }) return //no op, no letters filled out yet!
